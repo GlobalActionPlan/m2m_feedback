@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      metal:use-macro="view.macro('arche:templates/master.pt')"
+      i18n:domain="m2m_feedback">
+  <div metal:fill-slot="content" class="row">
+    <div class="col-md-12">        
+      <h1>${context.title}</h1>
+      
+      <a class="btn btn-success"
+        href="${request.resource_url(context, 'bulk_select')}"
+        i18n:translate="">Bulk edit rules</a>
+      
+      <tal:iter repeat="questions view.get_referenced_questions()">
+        <h2>${questions.title}</h2>
+        <p>
+          ${len(questions)} <span i18n:translate="">Questions</span>
+        </p>
+        <table class="table table-striped">
+          <tbody>
+            <tal:questions repeat="question view.get_questions(questions)">
+              <tr>
+                <th colspan="2">
+                  <a class="btn btn-success btn-xs"
+                    href="${request.resource_url(context, 'edit_question', query = {'uid': question.uid})}">
+                    <span class="glyphicon glyphicon-edit"></span>
+                    <tal:ts i18n:translate="">Edit</tal:ts>
+                  </a>
+                  ${question.title}
+                  <tal:tags repeat="tag question.tags">
+                    <span class="label label-default">${tag}</span>
+                  </tal:tags>
+                </th>
+              </tr>
+              <tal:choices repeat="choice view.get_choices(question)">
+                <tr>
+                  <td>${choice.title}</td>
+                  <td>${context.get_choice_score(question, choice)}</td>
+                </tr>
+              </tal:choices>
+            </tal:questions>
+          </tbody>
+        </table>
+      </tal:iter>
+    </div>
+  </div>
+</html>
