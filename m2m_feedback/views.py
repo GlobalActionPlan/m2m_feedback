@@ -18,6 +18,7 @@ import deform
 
 from m2m_feedback import _
 from m2m_feedback.interfaces import IRuleSet
+from m2m_feedback.interfaces import ISurveyFeedback
 from m2m_feedback.schemas import get_choice_values_schema
 
 
@@ -157,6 +158,16 @@ class SingleEdit(BaseForm):
 
     def cancel_success(self, *args):
         return HTTPFound(location = self.request.resource_url(self.context, 'view'))
+
+
+@view_config(context = ISurveyFeedback,
+             name = 'info_panel',
+             permission = PERM_VIEW,
+             renderer = 'm2m_feedback:templates/feedback_info_panel.pt')
+class SurveyFeedbackInfoPanel(BaseView):
+    __call__ = lambda x: {}
+#    def __call__(self):
+#        return {}
 
 
 def includeme(config):

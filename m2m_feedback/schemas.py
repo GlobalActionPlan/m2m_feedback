@@ -2,12 +2,15 @@
 from __future__ import unicode_literals
 
 from arche_m2m.interfaces import IQuestion
+from arche_m2m.models.i18n import deferred_translations_node
 from arche_m2m.models.question import deferred_question_type_widget
 from pyramid.traversal import resource_path
 import colander
 import deform
+from arche.widgets import ReferenceWidget
 
 from m2m_feedback import _
+
 
 @colander.deferred
 def referenced_questions_widget(node, kw):
@@ -26,6 +29,34 @@ class RuleSetSchema(colander.Schema):
                                                title = _("Question sets to work with"),
                                                widget = referenced_questions_widget)
 
+
+
+@colander.deferred
+def referenced_ruleset_widget(node, kw):
+    view = kw['view']
+    query = "type_name == 'RuleSet'"
+    values = [('', _("<Select>"))]
+    for obj in view.catalog_query(query, resolve = True, sort_index = 'sortable_title'):
+        values.append((obj.uid, "%s (%s)" % (obj.title, resource_path(obj))))
+    return deform.widget.SelectWidget(values = values)
+
+@colander.deferred
+def referenced_sections_widget(node, kw):
+    return ReferenceWidget(query_params = {'type_name': 'SurveySection'})
+
+
+class SurveyFeedbackSchema(colander.Schema):
+    title = colander.SchemaNode(colander.String(),
+                                translate = True,
+                                translate_missing = "",
+                                title = _("Title"))
+    translations = deferred_translations_node
+    ruleset = colander.SchemaNode(colander.String(),
+                                  title = _("Ruleset"),
+                                  widget = referenced_ruleset_widget,)
+    referenced_sections = colander.SchemaNode(colander.Set(),
+                                              title = _("Sections to give feedback on"),
+                                              widget = referenced_sections_widget,)
 
 @colander.deferred
 def tag_select_widget(node, kw):
@@ -71,3 +102,4 @@ def get_choice_values_schema(question, request):
 def includeme(config):
     config.add_content_schema('RuleSet', RuleSetSchema, ('add','edit', 'view'))
     config.add_content_schema('RuleSet', BulkSelectQuestionsSchema, 'bulk_select')
+    config.add_content_schema('SurveyFeedback', SurveyFeedbackSchema, ('add', 'edit', 'view'))
