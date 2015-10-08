@@ -77,13 +77,7 @@ class BulkSelectQuestionsSchema(colander.Schema):
                               widget = tag_select_widget,)
 
 
-def get_choice_values_schema(question, request):
-    """ Append all relevant choices for question.
-        question is either a QuestionType or a Question object.
-        If it's a Question object, fetch all choices from
-        the referenced question type too.
-    """
-    schema = colander.Schema()
+def _get_choices(question, request):
     choices = list(question.get_choices(request.locale_name))
     if IQuestion.providedBy(question):
         docids = request.root.catalog.query("uid == '%s'" % question.question_type)[1]
@@ -92,11 +86,31 @@ def get_choice_values_schema(question, request):
         for qt in request.resolve_docids(docids):
             question_type = qt
             choices.extend(question_type.get_choices(request.locale_name))
+    return choices
+
+def get_choice_values_schema(question, request):
+    """ Append all relevant choices for question.
+        question is either a QuestionType or a Question object.
+        If it's a Question object, fetch all choices from
+        the referenced question type too.
+    """
+    schema = colander.Schema()
+    choices = _get_choices(question, request)
     for choice in choices:
         schema.add(colander.SchemaNode(colander.Int(),
                                        name = choice.cluster,
                                        title = choice.title))
     return schema
+
+def get_choice_values_appstruct(ruleset, question, request):
+    """ Fetch any existing scores for choices related to this question or question type.
+    """
+    appstruct = {}
+    for choice in _get_choices(question, request):
+        value = ruleset.get_choice_score(question, choice)
+        if value != None:
+            appstruct[choice.cluster] = value
+    return appstruct
 
 
 def includeme(config):

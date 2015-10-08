@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 
 from arche.security import PERM_EDIT
 from arche.security import PERM_VIEW
+from arche.security import NO_PERMISSION_REQUIRED
 from arche.views.base import BaseForm
 from arche.views.base import BaseView
 from pyramid.decorator import reify
@@ -15,11 +16,14 @@ from pyramid.view import view_defaults
 from repoze.catalog.query import Any
 from repoze.catalog.query import Eq
 import deform
+import colander
+from arche_m2m.views.survey import BaseSurveySection
 
 from m2m_feedback import _
 from m2m_feedback.interfaces import IRuleSet
 from m2m_feedback.interfaces import ISurveyFeedback
 from m2m_feedback.schemas import get_choice_values_schema
+from m2m_feedback.schemas import get_choice_values_appstruct
 
 
 @view_defaults(context = IRuleSet, permission = PERM_VIEW)
@@ -106,7 +110,7 @@ class BulkEdit(BaseForm):
             query &= Eq('type_name', 'Question')
             query &= Eq('question_type', self.question_type.uid)
             if self.tag:
-                query &= Eq('tag', self.tag)
+                query &= Eq('tags', self.tag)
             docids.update(tuple(self.catalog_query(query, resolve = False)))
         return docids
 
@@ -140,6 +144,9 @@ class SingleEdit(BaseForm):
             raise HTTPNotFound(_("Question not found"))
         return que
 
+    def appstruct(self):
+        return get_choice_values_appstruct(self.context, self.question, self.request)
+
     def get_schema(self):
         schema = get_choice_values_schema(self.question, self.request)
         schema.title = self.question.title
@@ -165,9 +172,35 @@ class SingleEdit(BaseForm):
              permission = PERM_VIEW,
              renderer = 'm2m_feedback:templates/feedback_info_panel.pt')
 class SurveyFeedbackInfoPanel(BaseView):
+
     __call__ = lambda x: {}
-#    def __call__(self):
-#        return {}
+
+
+@view_config(context = ISurveyFeedback,
+             permission = NO_PERMISSION_REQUIRED,
+             renderer = "m2m_feedback:templates/survey_feedback_participant.pt")
+class SurveySectionForm(BaseSurveySection):
+
+    def get_schema(self):
+        return colander.Schema()
+
+    def next_success(self, appstruct):
+        next_section = self.next_section()
+        #Do stuff if finished
+        if not next_section:
+            return HTTPFound(location = self.link(self.context.__parent__, 'done'))
+        return HTTPFound(location = self.link(next_section))
+
+    def previous_success(self, appstruct):
+        return self.go_previous()
+
+    def go_previous(self, *args):
+        previous = self.previous_section()
+        if previous is None:
+            return HTTPFound(location = self.link(self.context.__parent__, 'do'))
+        return HTTPFound(location = self.link(previous))
+
+    previous_failure = go_previous
 
 
 def includeme(config):
