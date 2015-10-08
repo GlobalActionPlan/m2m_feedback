@@ -181,8 +181,38 @@ class SurveyFeedbackInfoPanel(BaseView):
              renderer = "m2m_feedback:templates/survey_feedback_participant.pt")
 class SurveySectionForm(BaseSurveySection):
 
+    @reify
+    def ruleset(self):
+        return self.resolve_uid(self.context.ruleset, perm = None)
+
     def get_schema(self):
         return colander.Schema()
+
+    def get_referenced_sections(self):
+        results = []
+        for uid in self.context.referenced_sections:
+            results.append(self.resolve_uid(uid, perm = None))
+        return results
+
+    def get_questions(self, section):
+        results = []
+        for qid in section.question_ids:
+            docids = self.catalog_search(cluster = qid, language = self.request.locale_name)
+            #Only one or none
+            for question in self.resolve_docids(docids, perm = None):
+                results.append(question)
+        return results
+
+    def get_picked_choice(self, section, question):
+        user_response = section.responses.get(self.participant_uid, {})
+        choice_cluster = user_response.get(question.cluster, '')
+        for choice in self.catalog_search(cluster = choice_cluster, language = self.request.locale_name, resolve = True, perm = None):
+            return choice
+
+    def get_picked_choice_score(self, section, question):
+        choice = self.get_picked_choice(section, question)
+        if choice and self.ruleset:
+            return self.ruleset.get_choice_score(question, choice)
 
     def next_success(self, appstruct):
         next_section = self.next_section()

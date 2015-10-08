@@ -11,7 +11,32 @@
           <div class="progress-bar progress-bar-warning progress-bar-striped" style="width: ${current}%"></div>
         </div>
         <p>FIXME: Feedback here</p>
+        <tal:section repeat="section view.get_referenced_sections()">
+          <h3>${section.title}</h3>
+          
+          As an example:
+          <table class="table table-striped">
+            <thead>
+              <tr>
+                <th>Question</th>
+                <th>Choice</th>
+                <th>Score</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tal:iterate repeat="question view.get_questions(section)">
+                <tr>
+                  <td>${question.title}</td>
+                  <td tal:define="choice view.get_picked_choice(section, question)">${choice.title|''}</td>
+                  <td>${view.get_picked_choice_score(section, question)}</td>
+                </tr>
+              </tal:iterate>
+            </tbody>
+          </table>
+        </tal:section>
+
         <p>&nbsp;</p>
+
         <form tal:replace="structure form" />
       </div>
     </div>
