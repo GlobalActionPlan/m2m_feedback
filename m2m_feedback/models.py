@@ -19,6 +19,7 @@ class RuleSet(Content):
     type_title = _("Ruleset")
     _referenced_questions = frozenset()
     choice_scores = None
+    nav_visible = False
 
     @property
     def referenced_questions(self):
