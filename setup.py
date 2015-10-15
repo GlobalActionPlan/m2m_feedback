@@ -33,5 +33,7 @@ setup(name='m2m_feedback',
       tests_require=requires,
       test_suite="m2m_feedback",
       entry_points="""\
+      [fanstatic.libraries]
+      m2m_feedback = m2m_feedback.fanstatic_lib:lib_m2m_feedback
       """,
       )
