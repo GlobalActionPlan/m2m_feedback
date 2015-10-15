@@ -9,22 +9,18 @@
       <small>${context.type_title|context.type_name}</small>
     </h3>
   </div>
-  <div class="panel-body" tal:define="ruleset view.resolve_uid(context.ruleset)">
+  <div class="panel-body"
+    tal:define="ruleset view.resolve_uid(context.ruleset);
+                section view.resolve_uid(context.section)">
     <div>
       <span i18n:translate="">Ruleset</span>:
-      <a href="${request.resource_url(ruleset)}">${ruleset.title}</a>
+      <a tal:condition="ruleset" href="${request.resource_url(ruleset)}">${ruleset.title}</a>
     </div>
     <div>
-      <span i18n:translate="">Referenced sections</span>:
-      <ul>
-        <tal:uid tal:repeat="uid context.referenced_sections">
-        <li tal:define="obj view.resolve_uid(uid)">
-          <a href="${request.resource_url(obj)}">
-            ${obj.title}
-          </a>
-        </li>
-        </tal:uid>
-      </ul>
+      <span i18n:translate="">Section</span>:
+      <a tal:condition="section" href="${request.resource_url(section)}">
+        ${section.title}
+      </a>
     </div>
   </div>
 </div>

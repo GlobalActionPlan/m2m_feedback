@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
+from decimal import Decimal
 
+from arche.security import NO_PERMISSION_REQUIRED
 from arche.security import PERM_EDIT
 from arche.security import PERM_VIEW
-from arche.security import NO_PERMISSION_REQUIRED
 from arche.views.base import BaseForm
 from arche.views.base import BaseView
+from arche_m2m.views.survey import BaseSurveySection
 from pyramid.decorator import reify
 from pyramid.httpexceptions import HTTPForbidden
 from pyramid.httpexceptions import HTTPFound
@@ -13,17 +15,17 @@ from pyramid.httpexceptions import HTTPNotFound
 from pyramid.traversal import resource_path
 from pyramid.view import view_config
 from pyramid.view import view_defaults
-from repoze.catalog.query import Any
 from repoze.catalog.query import Eq
-import deform
 import colander
-from arche_m2m.views.survey import BaseSurveySection
+import deform
 
 from m2m_feedback import _
 from m2m_feedback.interfaces import IRuleSet
 from m2m_feedback.interfaces import ISurveyFeedback
 from m2m_feedback.schemas import get_choice_values_schema
 from m2m_feedback.schemas import get_choice_values_appstruct
+from m2m_feedback.models import get_all_choices
+from m2m_feedback.models import get_relevant_threshold
 
 
 @view_defaults(context = IRuleSet, permission = PERM_VIEW)
@@ -46,13 +48,8 @@ class RuleSetView(BaseView):
                                    path = path,
                                    type_name = 'Question')
 
-    def get_choices(self, question, own_choices = True):
-        qtype = self.resolve_uid(question.question_type)
-        lang = self.request.locale_name
-        choices = [choice for choice in qtype.get_choices(lang)]
-        if own_choices:
-            choices.extend([choice for choice in question.get_choices(lang)])
-        return choices
+    def get_choices(self, question, only_from_type = False):
+        return get_all_choices(question, self.request, only_from_type = only_from_type)
 
 
 @view_config(context = IRuleSet,
@@ -178,25 +175,75 @@ class SurveyFeedbackInfoPanel(BaseView):
 
 @view_config(context = ISurveyFeedback,
              permission = NO_PERMISSION_REQUIRED,
-             renderer = "m2m_feedback:templates/survey_feedback_participant.pt")
-class SurveySectionForm(BaseSurveySection):
+             renderer = "m2m_feedback:templates/survey_feedback.pt")
+@view_config(context = ISurveyFeedback,
+             name = 'view',
+             permission = PERM_VIEW,
+             renderer = "m2m_feedback:templates/survey_feedback.pt")
+class SurveyFeedbackForm(BaseSurveySection):
+
+    @property
+    def main_tpl(self):
+        """ Use different template depending on who the user is.
+            Regular participants get the stripped template without any other controls.
+        """
+        if self.show_manager_controls:
+            return 'arche:templates/master.pt'
+        return 'arche_m2m:templates/master_stripped.pt'
+
+    @reify
+    def show_manager_controls(self):
+        return not self.participant_uid and self.request.has_permission(PERM_VIEW)
 
     @reify
     def ruleset(self):
         return self.resolve_uid(self.context.ruleset, perm = None)
 
+    @reify
+    def section(self):
+        return self.resolve_uid(self.context.section, perm = None)
+
+    @reify
+    def max_score(self):
+        results = []
+        for question in self.get_questions():
+            score = 0
+            for choice in get_all_choices(question, self.request):
+                this_score = self.ruleset.get_choice_score(question, choice)
+                if this_score and this_score > score:
+                    score = this_score
+            results.append(score)
+        
+        return sum(results)
+
+    @reify
+    def participant_score(self):
+        part_responses = self.section.responses.get(self.participant_uid, {})
+        scores = []
+        for question in self.get_questions():
+            if question.cluster in part_responses:
+                choice = self.get_picked_choice(self.section, question)
+                if choice:
+                    scores.append(self.ruleset.get_choice_score(question, choice, default = 0))
+        return sum(scores)
+
+    def get_percentage(self, score):
+        try:
+            return (Decimal(score) / Decimal(self.max_score)) * 100
+        except ZeroDivisionError:
+            return 0
+
+    def get_relevant_threshold(self, percentage = None):
+        if percentage is None:
+            percentage = self.get_percentage(self.participant_score)
+        return get_relevant_threshold(self.context, percentage)
+
     def get_schema(self):
         return colander.Schema()
 
-    def get_referenced_sections(self):
+    def get_questions(self):
         results = []
-        for uid in self.context.referenced_sections:
-            results.append(self.resolve_uid(uid, perm = None))
-        return results
-
-    def get_questions(self, section):
-        results = []
-        for qid in section.question_ids:
+        for qid in self.section.question_ids:
             docids = self.catalog_search(cluster = qid, language = self.request.locale_name)
             #Only one or none
             for question in self.resolve_docids(docids, perm = None):
@@ -204,9 +251,14 @@ class SurveySectionForm(BaseSurveySection):
         return results
 
     def get_picked_choice(self, section, question):
+        #FIXME: This is not the right way to seach.
+        #The response might not be a reference
         user_response = section.responses.get(self.participant_uid, {})
         choice_cluster = user_response.get(question.cluster, '')
-        for choice in self.catalog_search(cluster = choice_cluster, language = self.request.locale_name, resolve = True, perm = None):
+        for choice in self.catalog_search(cluster = choice_cluster,
+                                          language = self.request.locale_name,
+                                          resolve = True,
+                                          perm = None):
             return choice
 
     def get_picked_choice_score(self, section, question):

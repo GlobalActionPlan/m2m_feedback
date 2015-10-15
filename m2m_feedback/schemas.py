@@ -1,15 +1,17 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from arche_m2m.interfaces import IQuestion
+from arche_m2m.interfaces import ISurvey
+from arche_m2m.interfaces import ISurveySection
 from arche_m2m.models.i18n import deferred_translations_node
 from arche_m2m.models.question import deferred_question_type_widget
+from pyramid.traversal import find_interface
 from pyramid.traversal import resource_path
 import colander
 import deform
-from arche.widgets import ReferenceWidget
 
 from m2m_feedback import _
+from m2m_feedback.models import get_all_choices
 
 
 @colander.deferred
@@ -30,7 +32,6 @@ class RuleSetSchema(colander.Schema):
                                                widget = referenced_questions_widget)
 
 
-
 @colander.deferred
 def referenced_ruleset_widget(node, kw):
     view = kw['view']
@@ -41,8 +42,14 @@ def referenced_ruleset_widget(node, kw):
     return deform.widget.SelectWidget(values = values)
 
 @colander.deferred
-def referenced_sections_widget(node, kw):
-    return ReferenceWidget(query_params = {'type_name': 'SurveySection'})
+def referenced_section_widget(node, kw):
+    context = kw['context']
+    values = [('', _("<Select>"))]
+    survey = find_interface(context, ISurvey)
+    for obj in survey.values():
+        if ISurveySection.providedBy(obj):
+            values.append((obj.uid, obj.title))
+    return deform.widget.SelectWidget(values = values)
 
 
 class SurveyFeedbackSchema(colander.Schema):
@@ -54,9 +61,33 @@ class SurveyFeedbackSchema(colander.Schema):
     ruleset = colander.SchemaNode(colander.String(),
                                   title = _("Ruleset"),
                                   widget = referenced_ruleset_widget,)
-    referenced_sections = colander.SchemaNode(colander.Set(),
-                                              title = _("Sections to give feedback on"),
-                                              widget = referenced_sections_widget,)
+    section = colander.SchemaNode(colander.String(),
+                                  title = _("Section to give feedback on"),
+                                  description = _("feedback_schema_section_description",
+                                                  default = "Must be a locally placed section. "
+                                                  "If none exist you may need to add one first."),
+                                  widget = referenced_section_widget,)
+
+
+class FeedbackThresholdSchema(colander.Schema):
+    percentage = colander.SchemaNode(colander.Int(),
+                                     title = _("Percentage"),
+                                     description = _("Above this increase"))
+    title = colander.SchemaNode(colander.String(),
+                                title = _("Title"),
+                                description = _("One-word title for this status."))
+    description = colander.SchemaNode(colander.String(),
+                                title = _("In-depth description"),
+                                description = _("threshold_description",
+                                                default = "Any tips for participants who reach this level?"))
+    colour = colander.SchemaNode(colander.String(),
+                                 title = _("Colour"),
+                                 description = _("rgb_colour_description",
+                                                 default = "RGB colour codes. 6 letters or digits."),
+                                 missing = "",
+                                 validator = colander.Regex("^[a-fA-F0-9]{6}$",
+                                                            msg =_("colour_regex_fail",
+                                                                   default = "Must be 0-9 and a-f only, and exactly 6 chars.")))
 
 @colander.deferred
 def tag_select_widget(node, kw):
@@ -77,17 +108,6 @@ class BulkSelectQuestionsSchema(colander.Schema):
                               widget = tag_select_widget,)
 
 
-def _get_choices(question, request):
-    choices = list(question.get_choices(request.locale_name))
-    if IQuestion.providedBy(question):
-        docids = request.root.catalog.query("uid == '%s'" % question.question_type)[1]
-        question_type = None
-        #Generator
-        for qt in request.resolve_docids(docids):
-            question_type = qt
-            choices.extend(question_type.get_choices(request.locale_name))
-    return choices
-
 def get_choice_values_schema(question, request):
     """ Append all relevant choices for question.
         question is either a QuestionType or a Question object.
@@ -95,7 +115,7 @@ def get_choice_values_schema(question, request):
         the referenced question type too.
     """
     schema = colander.Schema()
-    choices = _get_choices(question, request)
+    choices = get_all_choices(question, request)
     for choice in choices:
         schema.add(colander.SchemaNode(colander.Int(),
                                        name = choice.cluster,
@@ -106,14 +126,14 @@ def get_choice_values_appstruct(ruleset, question, request):
     """ Fetch any existing scores for choices related to this question or question type.
     """
     appstruct = {}
-    for choice in _get_choices(question, request):
+    for choice in get_all_choices(question, request):
         value = ruleset.get_choice_score(question, choice)
         if value != None:
             appstruct[choice.cluster] = value
     return appstruct
 
-
 def includeme(config):
     config.add_content_schema('RuleSet', RuleSetSchema, ('add','edit', 'view'))
     config.add_content_schema('RuleSet', BulkSelectQuestionsSchema, 'bulk_select')
     config.add_content_schema('SurveyFeedback', SurveyFeedbackSchema, ('add', 'edit', 'view'))
+    config.add_content_schema('FeedbackThreshold', FeedbackThresholdSchema, ('add', 'edit', 'view'))
