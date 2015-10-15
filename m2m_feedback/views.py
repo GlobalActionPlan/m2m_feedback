@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 from decimal import Decimal
+from decimal import InvalidOperation
 
 from arche.security import NO_PERMISSION_REQUIRED
 from arche.security import PERM_EDIT
@@ -230,7 +231,7 @@ class SurveyFeedbackForm(BaseSurveySection):
     def get_percentage(self, score):
         try:
             return (Decimal(score) / Decimal(self.max_score)) * 100
-        except ZeroDivisionError:
+        except InvalidOperation:
             return 0
 
     def get_relevant_threshold(self, percentage = None):
