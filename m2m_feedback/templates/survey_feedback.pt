@@ -27,7 +27,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr tal:repeat="obj context.values()">
+            <tr tal:repeat="obj view.get_thresholds()">
               <td>
                 <a href="${request.resource_url(obj)}">${obj.title}</a>
               </td>

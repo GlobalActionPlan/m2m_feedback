@@ -21,12 +21,13 @@ import colander
 import deform
 
 from m2m_feedback import _
+from m2m_feedback.interfaces import IFeedbackThreshold
 from m2m_feedback.interfaces import IRuleSet
 from m2m_feedback.interfaces import ISurveyFeedback
-from m2m_feedback.schemas import get_choice_values_schema
-from m2m_feedback.schemas import get_choice_values_appstruct
 from m2m_feedback.models import get_all_choices
 from m2m_feedback.models import get_relevant_threshold
+from m2m_feedback.schemas import get_choice_values_appstruct
+from m2m_feedback.schemas import get_choice_values_schema
 
 
 @view_defaults(context = IRuleSet, permission = PERM_VIEW)
@@ -266,6 +267,10 @@ class SurveyFeedbackForm(BaseSurveySection):
         choice = self.get_picked_choice(section, question)
         if choice and self.ruleset:
             return self.ruleset.get_choice_score(question, choice)
+
+    def get_thresholds(self):
+        """ Returns all contained thresholds sorted on percentage. """
+        return sorted([x for x in self.context.values() if IFeedbackThreshold.providedBy(x)], key = lambda x: x.percentage)
 
     def next_success(self, appstruct):
         next_section = self.next_section()
