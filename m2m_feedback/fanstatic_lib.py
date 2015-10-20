@@ -7,6 +7,4 @@ from fanstatic import Resource
 
 lib_m2m_feedback = Library("m2m_feedback", "static")
 
-m2m_feedback_css = Resource(lib_m2m_feedback, 'main.css', depends = (main_css,))
-
-
+m2m_feedback_main_css = Resource(lib_m2m_feedback, 'main.css', depends = (main_css,))
