@@ -292,6 +292,5 @@ class SurveyFeedbackForm(BaseSurveySection):
 
     previous_failure = go_previous
 
-
 def includeme(config):
     config.scan()

@@ -1,156 +1,110 @@
 <!DOCTYPE html>
+
 <html xmlns="http://www.w3.org/1999/xhtml"
-      metal:use-macro="view.macro(view.main_tpl)"
-      i18n:domain="arche_m2m">
-  <div metal:fill-slot="content">
-    <div class="row" tal:condition="not view.show_manager_controls">
-      <div class="col-m2-12">
-        <div class="progress" tal:define="(completed, current) view.calc_percentages()">
-          <div class="progress-bar progress-bar-success" style="width: ${completed}%"></div>
-          <div class="progress-bar progress-bar-warning progress-bar-striped" style="width: ${current}%"></div>
-        </div>
-      </div>
-    </div>
-    <div class="row" tal:condition="view.show_manager_controls">
-      <div class="col-md-12">
-        <h3 i18n:translate="">Thresholds</h3>
-        Max score: ${view.max_score}
-        Participant score: ${view.participant_score|''}
-        Ruleset: <a href="${request.resource_url(view.ruleset)}">${view.ruleset.title}</a>
-        <table class="table table-striped">
-          <thead>
-            <tr>
-              <th i18n:translate="">Title</th>
-              <th i18n:translate="">Percentage</th>
-              <th i18n:translate="">Colour</th>
-              <th i18n:translate="">Description</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr tal:repeat="obj view.get_thresholds()">
-              <td>
-                <a href="${request.resource_url(obj)}">${obj.title}</a>
-              </td>
-              <td>${obj.percentage}</td>
-              <td>
-                <code class="badge" style="background-color: #${obj.colour};">
-                  ${obj.colour}
-                </code>
-              </td>
-              <td>${obj.description}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div><!-- manager -->
-    <div class="row">
-      <div class="col-md-12">
-        <br/>
-
-        <h3>${context.title}</h3>
-        
-        You got ${view.participant_score} / ${view.max_score}
-        
-        <tal:def define="threshold view.get_relevant_threshold()">
-
-          <div class="progress" tal:define="percentage '{0:.0f}%'.format(view.get_percentage(view.participant_score));
-                                            hex_colour getattr(threshold, 'colour', 'cccccc');">
-            <div class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"
-            style="min-width: 2em; width: ${percentage}; background-color: #${hex_colour};">
-              ${percentage}
-            </div>
-          </div>
-        
-          <tal:threshold condition="threshold">
-            <h3>${threshold.title}</h3>
-            <p>${threshold.description}</p>
-          
-          </tal:threshold>
-          <tal:no_info condition="not threshold">
-            No info related to this threshold level
-          </tal:no_info>
-        </tal:def>
-        
-        <tal:comment condition="None">
-        As an example:
-        <table class="table table-striped">
-          <thead>
-            <tr>
-              <th>Question</th>
-              <th>Choice</th>
-              <th>Score</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tal:iterate repeat="question view.get_questions()">
-              <tr>
-                <td>${question.title}</td>
-                <td tal:define="choice view.get_picked_choice(view.section, question)">${choice.title|''}</td>
-                <td>${view.get_picked_choice_score(view.section, question)}</td>
-              </tr>
-            </tal:iterate>
-          </tbody>
-        </table>
-         </tal:comment>
-        
-
-        <p>&nbsp;</p>
-
-        <form tal:replace="structure form" />
-      </div>
-    </div>
-    <script type="text/javascript">
-      $(document).ready(function() {
-        $("form input").keypress(function (e) {
-          if ((e.which && e.which == 13) || (e.keyCode && e.keyCode == 13)) {
-            $('button.submit-default').click();
-            return false;
-          } else {
-            return true;
-          }
-        });
-      });
-    </script>
-    
-    <div class="container-fluid">
-	<div class="row">
-		<div class="col-md-12">
-			<h3>
-				h3. Lorem ipsum dolor sit amet.
-			</h3>
-			<div class="row">
-				<div class="col-md-8">
-					<dl>
-						<dt>
-							Description lists
-						</dt>
-						<dd>
-							A description list is perfect for defining terms.
-						</dd>
-						<dt>
-							Euismod
-						</dt>
-						<dd>
-							Vestibulum id ligula porta felis euismod semper eget lacinia odio sem nec elit.
-						</dd>
-						<dd>
-							Donec id elit non mi porta gravida at eget metus.
-						</dd>
-						<dt>
-							Malesuada porta
-						</dt>
-						<dd>
-							Etiam porta sem malesuada magna mollis euismod.
-						</dd>
-						<dt>
-							Felis euismod semper eget lacinia
-						</dt>
-						<dd>
-							Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus.
-						</dd>
-					</dl>
+metal:use-macro="view.macro(view.main_tpl)"
+i18n:domain="arche_m2m">
+	<div metal:fill-slot="content">
+		<p>&nbsp;</p>
+		<div class="row" tal:condition="not view.show_manager_controls">
+			<div class="col-m2-12">
+				<div class="progress" tal:define="(completed, current) view.calc_percentages()">
+					<div class="progress-bar progress-bar-success" style="width: ${completed}%"></div>
+					<div class="progress-bar progress-bar-warning progress-bar-striped" style="width: ${current}%"></div>
 				</div>
-				<div class="col-md-4">
+			</div>
+		</div>
+
+		<!-- manager section -->
+		<div class="row" tal:condition="view.show_manager_controls">
+			<div class="col-md-12">
+				<h3 i18n:translate="">Thresholds</h3>
+				Max score: ${view.max_score}
+				Participant score: ${view.participant_score|''}
+				Ruleset: <a href="${request.resource_url(view.ruleset)}">${view.ruleset.title}</a>
+
+				<table class="table table-striped">
+					<thead>
+						<tr>
+							<th i18n:translate="">Title</th>
+							<th i18n:translate="">Percentage</th>
+							<th i18n:translate="">Colour</th>
+							<th i18n:translate="">Description</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr tal:repeat="obj view.get_thresholds()">
+							<td>
+								<a href="${request.resource_url(obj)}">${obj.title}</a>
+							</td>
+							<td>${obj.percentage}</td>
+							<td>
+								<code class="badge" style="background-color: #${obj.colour};">
+									${obj.colour} 
+								</code>
+							</td>
+							<td>${obj.description}</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</div><!-- manager -->
+
+
+		<div class="row">
+			<h1>
+				Result of the section ${view.section.title}
+			</h1>
+			<p>&nbsp;</p>
+			<p>&nbsp;</p>
+
+			<div class="container-fluid">
+				<div class="row">
+					
+					<tal:def define="threshold view.get_relevant_threshold()">
+						<div class="progress2 " tal:define="percentage '{0:.0f}%'.format(view.get_percentage(view.participant_score));
+							hex_colour getattr(threshold, 'colour', 'cccccc');">
+							<div class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"
+								style="min-width: 2em; width: ${percentage}; background-color: #${hex_colour};">
+									${percentage}
+							</div>
+						</div>
+						<div class="col-md-6">
+						<p>&nbsp;</p>	
+						<tal:threshold condition="threshold">
+							<h2>${threshold.title}</h2>
+							<p>&nbsp;</p>
+							<p>${threshold.description}</p>
+						</tal:threshold>
+						<tal:no_info condition="not threshold">
+							No info related to this threshold level
+						</tal:no_info>
+						</div>
+						<div class="col-md-6">
+							<p>&nbsp;</p>
+							<h2>Score</h2>
+							<p>&nbsp;</p>
+							<p>
+								Your score on this section : 
+							</p>
+							<span tal:define="hex_colour getattr(threshold, 'colour', 'cccccc');" style="color : #${hex_colour}">${view.participant_score}</span>
+							<p> Maximum score you can have :</p>
+							<span>${view.max_score}</span>
+						</div>
+					</tal:def>
+
+				</div>
+			</div>
+
+
+			<p>&nbsp;</p>
+			
+		</div>
+
+
+		<div class="row list">
+				<div class="col-md-6">
+					
+					<h2><span id="best"></span> Best answers</h2>
 					<ol>
 						<li>
 							Lorem ipsum dolor sit amet
@@ -167,66 +121,50 @@
 						<li>
 							Nulla volutpat aliquam velit
 						</li>
+					</ol>
+				</div>
+				<div class="col-md-6">
+					<h2><span id="worst"></span>What you can improve</h2>
+					<ol>
 						<li>
-							Faucibus porta lacus fringilla vel
+							Lorem ipsum dolor sit amet
 						</li>
 						<li>
-							Aenean sit amet erat nunc
+							Consectetur adipiscing elit
 						</li>
 						<li>
-							Eget porttitor lorem
+							Integer molestie lorem at massa
+						</li>
+						<li>
+							Facilisis in pretium nisl aliquet
+						</li>
+						<li>
+							Nulla volutpat aliquam velit
 						</li>
 					</ol>
 				</div>
 			</div>
-			<div class="row">
-				<div class="col-md-12">
-					<tal:def define="threshold view.get_relevant_threshold()">
 
-					  <div class="progress2" tal:define="percentage '{0:.0f}%'.format(view.get_percentage(view.participant_score));
-														hex_colour getattr(threshold, 'colour', 'cccccc');">
-						<div class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"
-						style="min-width: 2em; width: ${percentage}; background-color: #${hex_colour};">
-						  ${percentage}
-						</div>
-					  </div>
-					
-					  <tal:threshold condition="threshold">
-						<h3>${threshold.title}</h3>
-						<p>${threshold.description}</p>
-					  
-					  </tal:threshold>
-					  <tal:no_info condition="not threshold">
-						No info related to this threshold level
-					  </tal:no_info>
-					</tal:def>
-				</div>
-			</div>
-		</div>
+		<p>&nbsp;</p>
+		<form tal:replace="structure form" />
+
+		<script type="text/javascript">
+			$(document).ready(function() 
+			{
+				$("form input").keypress(function (e) 
+				{
+					if ((e.which && e.which == 13) || (e.keyCode && e.keyCode == 13))
+					{
+						$('button.submit-default').click();
+						return false;
+					}
+					else
+					{
+						return true;
+					}
+				});
+			});
+		</script>
+
 	</div>
-</div>
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-  </div>
 </html>
