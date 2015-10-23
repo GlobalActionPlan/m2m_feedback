@@ -290,6 +290,7 @@ class SurveyFeedbackForm(BaseSurveySection):
             return HTTPFound(location = self.link(self.context.__parent__, 'do'))
         return HTTPFound(location = self.link(previous))
 
+
     previous_failure = go_previous
 
 def includeme(config):

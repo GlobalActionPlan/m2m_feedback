@@ -8,3 +8,6 @@ def includeme(config):
     config.include('.models')
     config.include('.schemas')
     config.include('.views')
+    
+	config.add_static_view('static', 'm2m_feedback:static')
+

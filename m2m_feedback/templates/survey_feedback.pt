@@ -5,6 +5,7 @@ metal:use-macro="view.macro(view.main_tpl)"
 i18n:domain="arche_m2m">
 	<div metal:fill-slot="content">
 		<p>&nbsp;</p>
+		
 		<div class="row" tal:condition="not view.show_manager_controls">
 			<div class="col-m2-12">
 				<div class="progress" tal:define="(completed, current) view.calc_percentages()">
@@ -58,8 +59,7 @@ i18n:domain="arche_m2m">
 			<p>&nbsp;</p>
 
 			<div class="container-fluid">
-				<div class="row">
-					
+				<div class="row">		
 					<tal:def define="threshold view.get_relevant_threshold()">
 						<div class="progress2 " tal:define="percentage '{0:.0f}%'.format(view.get_percentage(view.participant_score));
 							hex_colour getattr(threshold, 'colour', 'cccccc');">
@@ -69,16 +69,16 @@ i18n:domain="arche_m2m">
 							</div>
 						</div>
 						<div class="col-md-6">
-						<p>&nbsp;</p>	
-						<tal:threshold condition="threshold">
-							<h2>${threshold.title}</h2>
-							<p>&nbsp;</p>
-							<p>${threshold.description}</p>
-						</tal:threshold>
-						<tal:no_info condition="not threshold">
-							No info related to this threshold level
-						</tal:no_info>
-						</div>
+							<p>&nbsp;</p>	
+							<tal:threshold condition="threshold">
+								<h2>${threshold.title}</h2>
+								<p>&nbsp;</p>
+								<p>${threshold.description}</p>
+							</tal:threshold>
+							<tal:no_info condition="not threshold">
+								No info related to this threshold level
+							</tal:no_info>
+							</div>
 						<div class="col-md-6">
 							<p>&nbsp;</p>
 							<h2>Score</h2>
@@ -86,67 +86,53 @@ i18n:domain="arche_m2m">
 							<p>
 								Your score on this section : 
 							</p>
-							<span tal:define="hex_colour getattr(threshold, 'colour', 'cccccc');" style="color : #${hex_colour}">${view.participant_score}</span>
+							<span id="participant_score" tal:define="hex_colour getattr(threshold, 'colour', 'cccccc');" style="color : #${hex_colour}">${view.participant_score}</span>
 							<p> Maximum score you can have :</p>
-							<span>${view.max_score}</span>
+							<span id="max_score">${view.max_score}</span>
 						</div>
 					</tal:def>
 
 				</div>
-			</div>
-
-
-			<p>&nbsp;</p>
-			
+			</div>		
 		</div>
 
+		<p>&nbsp;</p>
 
 		<div class="row list">
-				<div class="col-md-6">
-					
+				<div class="col-md-6">				
 					<h2><span id="best"></span> Best answers</h2>
+					
 					<ol>
-						<li>
-							Lorem ipsum dolor sit amet
+						<li tal:repeat="question view.get_questions()">
+							${question.title}
 						</li>
-						<li>
-							Consectetur adipiscing elit
-						</li>
-						<li>
-							Integer molestie lorem at massa
-						</li>
-						<li>
-							Facilisis in pretium nisl aliquet
-						</li>
-						<li>
-							Nulla volutpat aliquam velit
-						</li>
+						
 					</ol>
 				</div>
 				<div class="col-md-6">
 					<h2><span id="worst"></span>What you can improve</h2>
 					<ol>
-						<li>
-							Lorem ipsum dolor sit amet
-						</li>
-						<li>
-							Consectetur adipiscing elit
-						</li>
-						<li>
-							Integer molestie lorem at massa
-						</li>
-						<li>
-							Facilisis in pretium nisl aliquet
-						</li>
-						<li>
-							Nulla volutpat aliquam velit
+						<li tal:repeat="question view.get_questions()">
+							${question.title}
 						</li>
 					</ol>
 				</div>
 			</div>
 
 		<p>&nbsp;</p>
+		
 		<form tal:replace="structure form" />
+
+		<script type="text/javascript">
+				participant_score=$(this).attr('participant_score');
+				max_score=$(this).attr('max_score');
+				
+				if ($(max_score).html() > $(participant_score).html())
+				{
+						document.getElementById('picture').src='smiley.jpg';
+				}
+		</script>
+
 
 		<script type="text/javascript">
 			$(document).ready(function() 
