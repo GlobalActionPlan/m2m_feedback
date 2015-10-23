@@ -207,6 +207,8 @@ class SurveyFeedbackForm(BaseSurveySection):
 
     @reify
     def max_score(self):
+        #FIXME: Calculate this another way. First look at the users possible choices, then remove
+        #any questions where the user picked something where omit_from_score_count == True
         results = []
         for question in self.get_questions():
             score = 0
@@ -215,7 +217,6 @@ class SurveyFeedbackForm(BaseSurveySection):
                 if this_score and this_score > score:
                     score = this_score
             results.append(score)
-        
         return sum(results)
 
     @reify
@@ -225,7 +226,7 @@ class SurveyFeedbackForm(BaseSurveySection):
         for question in self.get_questions():
             if question.cluster in part_responses:
                 choice = self.get_picked_choice(self.section, question)
-                if choice:
+                if choice and choice.omit_from_score_count == False:
                     scores.append(self.ruleset.get_choice_score(question, choice, default = 0))
         return sum(scores)
 

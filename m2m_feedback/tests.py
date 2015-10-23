@@ -91,6 +91,33 @@ class RuleSetTests(TestCase):
         self.assertEqual(obj.get_choice_score(question.cluster, choice.cluster), 1)
 
 
+class UpdateChoiceSiblingsIntegrationTests(TestCase):
+
+    def setUp(self):
+        self.config = testing.setUp()
+
+    def tearDown(self):
+        testing.tearDown()
+
+    def _fixture(self):
+        root = barebone_fixture(self.config)
+        _fixture_with_questions(root)
+        return root
+
+    def test_omit_from_score_count_updated(self):
+        self.config.include('arche.testing')
+        self.config.include('arche.models.catalog')
+        self.config.include('arche_m2m.models.catalog')
+        root = self._fixture()
+        self.config.include('m2m_feedback.models')
+        c1 = root['qtypes']['qt1']['c1']
+        c2 = root['qtypes']['qt1']['c2']
+        self.assertEqual(c1.omit_from_score_count, False)
+        c1.update(omit_from_score_count = True)
+        self.assertEqual(c1.omit_from_score_count, True)
+        self.assertEqual(c2.omit_from_score_count, True)
+
+
 class SurveyFeedbackFormTests(TestCase):
 
     def setUp(self):
