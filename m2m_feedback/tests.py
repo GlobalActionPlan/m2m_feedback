@@ -135,6 +135,14 @@ class SurveyFeedbackFormTests(TestCase):
         section.responses['participant_uid'] = {'q_cluster': 'a', 'q_cluster2': 'd'}
         self.assertEqual(view.participant_score, 9)
 
+    def test_get_highest_choice_score(self):
+        view = self._mk_view()
+        questions = view.root['questions']
+        q1 = questions['q1']
+        q2 = questions['q2']
+        self.assertEqual(view.get_highest_choice_score(q1), 2)
+        self.assertEqual(view.get_highest_choice_score(q2), 8)
+
 
 class GetRelevantThresholdTests(TestCase):
 

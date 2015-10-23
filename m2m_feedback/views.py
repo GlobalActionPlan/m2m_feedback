@@ -21,7 +21,6 @@ import colander
 import deform
 
 from m2m_feedback import _
-from m2m_feedback.fanstatic_lib import m2m_feedback_css
 from m2m_feedback.interfaces import IFeedbackThreshold
 from m2m_feedback.interfaces import IRuleSet
 from m2m_feedback.interfaces import ISurveyFeedback
@@ -187,7 +186,6 @@ class SurveyFeedbackForm(BaseSurveySection):
 
     @property
     def main_tpl(self):
-	m2m_feedback_css.need()
         """ Use different template depending on who the user is.
             Regular participants get the stripped template without any other controls.
         """
@@ -269,6 +267,14 @@ class SurveyFeedbackForm(BaseSurveySection):
         choice = self.get_picked_choice(section, question)
         if choice and self.ruleset:
             return self.ruleset.get_choice_score(question, choice)
+
+    def get_highest_choice_score(self, question):
+        score = 0
+        for choice in get_all_choices(question, self.request):
+            this_score = self.ruleset.get_choice_score(question, choice)
+            if this_score and this_score > score:
+                score = this_score
+        return score
 
     def get_thresholds(self):
         """ Returns all contained thresholds sorted on percentage. """
