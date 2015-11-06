@@ -284,8 +284,6 @@ class SurveyFeedbackForm(BaseSurveySection):
             if(isinstance(high_score,int) and isinstance(part_score,int)):                
                 diff = high_score - part_score
                 result.append((q,high_score,part_score,diff))
-            else:
-                result.append((q,None,None,None))
                 
         if isBad==False:            
             # sort by best score
