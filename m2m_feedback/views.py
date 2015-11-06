@@ -184,138 +184,137 @@ class SurveyFeedbackInfoPanel(BaseView):
              renderer = "m2m_feedback:templates/survey_feedback.pt")
 class SurveyFeedbackForm(BaseSurveySection):
 
-	@property
-	def main_tpl(self):
-		""" Use different template depending on who the user is.
-		Regular participants get the stripped template without any other controls.
-		"""
-		if self.show_manager_controls:
-			return 'arche:templates/master.pt'
-		return 'arche_m2m:templates/master_stripped.pt'
+    @property
+    def main_tpl(self):
+        """ Use different template depending on who the user is.
+        Regular participants get the stripped template without any other controls.
+        """
+        if self.show_manager_controls:
+            return 'arche:templates/master.pt'
+        return 'arche_m2m:templates/master_stripped.pt'
 
-	@reify
-	def show_manager_controls(self):
-		return not self.participant_uid and self.request.has_permission(PERM_VIEW)
+    @reify
+    def show_manager_controls(self):
+        return not self.participant_uid and self.request.has_permission(PERM_VIEW)
 
-	@reify
-	def ruleset(self):
-		return self.resolve_uid(self.context.ruleset, perm = None)
+    @reify
+    def ruleset(self):
+        return self.resolve_uid(self.context.ruleset, perm = None)
 
-	@reify
-	def section(self):
-		return self.resolve_uid(self.context.section, perm = None)
+    @reify
+    def section(self):
+        return self.resolve_uid(self.context.section, perm = None)
 
-	@reify
-	def max_score(self):
-		results = []
-		for question in self.get_questions():
-			score = 0
-			for choice in get_all_choices(question, self.request):
-				this_score = self.ruleset.get_choice_score(question, choice)
-				if this_score and this_score > score:
-					score = this_score
-			results.append(score)
+    @reify
+    def max_score(self):
+        results = []
+        for question in self.get_questions():
+            score = 0
+            for choice in get_all_choices(question, self.request):
+                this_score = self.ruleset.get_choice_score(question, choice)
+                if this_score and this_score > score:
+                    score = this_score
+            results.append(score)
 
-		return sum(results)
+        return sum(results)
 
-	@reify
-	def participant_score(self):
-		part_responses = self.section.responses.get(self.participant_uid, {})
-		scores = []
-		for question in self.get_questions():
-			if question.cluster in part_responses:
-				choice = self.get_picked_choice(self.section, question)
-				if choice:
-					scores.append(self.ruleset.get_choice_score(question, choice, default = 0))
-		return sum(scores)
+    @reify
+    def participant_score(self):
+        part_responses = self.section.responses.get(self.participant_uid, {})
+        scores = []
+        for question in self.get_questions():
+            if question.cluster in part_responses:
+                choice = self.get_picked_choice(self.section, question)
+                if choice:
+                    scores.append(self.ruleset.get_choice_score(question, choice, default = 0))
+        return sum(scores)
 
-	def get_percentage(self, score):
-		try:
-			return (Decimal(score) / Decimal(self.max_score)) * 100
-		except InvalidOperation:
-			return 0
+    def get_percentage(self, score):
+        try:
+            return (Decimal(score) / Decimal(self.max_score)) * 100
+        except InvalidOperation:
+            return 0
 
-	def get_relevant_threshold(self, percentage = None):
-		if percentage is None:
-			percentage = self.get_percentage(self.participant_score)
-		return get_relevant_threshold(self.context, percentage)
+    def get_relevant_threshold(self, percentage = None):
+        if percentage is None:
+            percentage = self.get_percentage(self.participant_score)
+        return get_relevant_threshold(self.context, percentage)
 
-	def get_schema(self):
-		return colander.Schema()
+    def get_schema(self):
+        return colander.Schema()
 
-	def get_questions(self):
-		results = []
-		for qid in self.section.question_ids:
-			docids = self.catalog_search(cluster = qid, language = self.request.locale_name)
-				#Only one or none
-			for question in self.resolve_docids(docids, perm = None):
-				results.append(question)
-		return results
+    def get_questions(self):
+        results = []
+        for qid in self.section.question_ids:
+            docids = self.catalog_search(cluster = qid, language = self.request.locale_name)
+                #Only one or none
+            for question in self.resolve_docids(docids, perm = None):
+                results.append(question)
+        return results
 
-	def get_picked_choice(self, section, question):
-		#FIXME: This is not the right way to seach.
-		#The response might not be a reference
-		user_response = section.responses.get(self.participant_uid, {})
-		choice_cluster = user_response.get(question.cluster, '')
-		for choice in self.catalog_search(cluster = choice_cluster,
-											  language = self.request.locale_name,
-											  resolve = True,
-											  perm = None):
-			return choice
+    def get_picked_choice(self, section, question):
+        #FIXME: This is not the right way to seach.
+        #The response might not be a reference
+        user_response = section.responses.get(self.participant_uid, {})
+        choice_cluster = user_response.get(question.cluster, '')
+        for choice in self.catalog_search(cluster = choice_cluster,
+                                              language = self.request.locale_name,
+                                              resolve = True,
+                                              perm = None):
+            return choice
 
-	def get_picked_choice_score(self, section, question):
-		choice = self.get_picked_choice(section, question)
-		if choice and self.ruleset:
-			return self.ruleset.get_choice_score(question, choice)
+    def get_picked_choice_score(self, section, question):
+        choice = self.get_picked_choice(section, question)
+        if choice and self.ruleset:
+            return self.ruleset.get_choice_score(question, choice)
 
-	def get_highest_choice_score(self, question):
-		score = 0
-		for choice in get_all_choices(question, self.request):
-			this_score = self.ruleset.get_choice_score(question, choice)
-			if this_score and this_score > score:
-				score = this_score
-		return score
+    def get_highest_choice_score(self, question):
+        score = 0
+        for choice in get_all_choices(question, self.request):
+            this_score = self.ruleset.get_choice_score(question, choice)
+            if this_score and this_score > score:
+                score = this_score
+        return score
 
-	def get_sort_by_hq(self,questions,isBad):
-		result = []
-		for q in questions:
-			high_score = self.get_highest_choice_score(q)
-			part_score = self.get_picked_choice_score(self.section,q)
-			if(isinstance(high_score,int) and isinstance(part_score,int)):				
-				diff = high_score - part_score
-				result.append((q,high_score,part_score,diff))
-			else:
-				result.append((q,None,None,None))
-				
-		if isBad==False:			
-			# sort by best score
-			return sorted(result, key = lambda result: result[3],reverse=False)
-		else:			
-			# sorted by bad score
-			return sorted(result, key = lambda result : result[3],reverse=True)
-		
-	def get_thresholds(self):
-		""" Returns all contained thresholds sorted on percentage. """
-		return sorted([x for x in self.context.values() if IFeedbackThreshold.providedBy(x)], key = lambda x: x.percentage)
+    def get_sort_by_hq(self,questions,isBad):
+        result = []
+        for q in questions:
+            high_score = self.get_highest_choice_score(q)
+            part_score = self.get_picked_choice_score(self.section,q)
+            if(isinstance(high_score,int) and isinstance(part_score,int)):                
+                diff = high_score - part_score
+                result.append((q,high_score,part_score,diff))
+            else:
+                result.append((q,None,None,None))
+                
+        if isBad==False:            
+            # sort by best score
+            return sorted(result, key = lambda result: result[3],reverse=False)
+        else:            
+            # sorted by bad score
+            return sorted(result, key = lambda result : result[3],reverse=True)
+        
+    def get_thresholds(self):
+        """ Returns all contained thresholds sorted on percentage. """
+        return sorted([x for x in self.context.values() if IFeedbackThreshold.providedBy(x)], key = lambda x: x.percentage)
 
-	def next_success(self, appstruct):
-		next_section = self.next_section()
-		#Do stuff if finished
-		if not next_section:
-			return HTTPFound(location = self.link(self.context.__parent__, 'done'))
-		return HTTPFound(location = self.link(next_section))
+    def next_success(self, appstruct):
+        next_section = self.next_section()
+        #Do stuff if finished
+        if not next_section:
+            return HTTPFound(location = self.link(self.context.__parent__, 'done'))
+        return HTTPFound(location = self.link(next_section))
 
-	def previous_success(self, appstruct):
-		return self.go_previous()
+    def previous_success(self, appstruct):
+        return self.go_previous()
 
-	def go_previous(self, *args):
-		previous = self.previous_section()
-		if previous is None:
-			return HTTPFound(location = self.link(self.context.__parent__, 'do'))
-		return HTTPFound(location = self.link(previous))
+    def go_previous(self, *args):
+        previous = self.previous_section()
+        if previous is None:
+            return HTTPFound(location = self.link(self.context.__parent__, 'do'))
+        return HTTPFound(location = self.link(previous))
 
-
-	previous_failure = go_previous
+    previous_failure = go_previous
 
 def includeme(config):
     config.scan()
