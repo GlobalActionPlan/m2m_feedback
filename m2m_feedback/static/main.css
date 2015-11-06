@@ -35,8 +35,13 @@ p,li
 	vertical-align : text-top;
 }	
 
+#pict
+{
+	
+	float:right;
+}
 
-span
+.number
 {
 	font-size : 5em;
 }
