@@ -98,7 +98,8 @@ i18n:domain="arche_m2m">
 							</tal:no_info>				
 						</div>
 					</tal:def>
-					<div  id="pict">
+					<div id="pict" tal:condition="view.participant_score == view.max_score">
+						
 						<image src="${request.static_url('m2m_feedback:static/images/smiley.png')}"/>
 					</div>
 				

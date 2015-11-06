@@ -165,9 +165,9 @@ class SurveyFeedbackFormTests(TestCase):
         section = view.request.root['survey']['ss']
         section.responses['participant_uid'] = {'q_cluster': 'a', 'q_cluster2': 'e', 'q_cluster3': 'f'}
         res = view.get_sort_by_hq([questions['q1'], questions['q2'], questions['q3']],True)
-        self.assertEqual(res, [(questions['q2'],8,8,0),(questions['q3'],5,4,1),(questions['q1'],4,1,3)])
-        res = view.get_sort_by_hq([questions['q1'], questions['q2'], questions['q3']],False)
-        self.assertEqual(res, [(questions['q1'],4,1,3),(questions['q3'],5,4,1),(questions['q2'],8,8,0)])
+        self.assertEqual(res, [(questions['q2'], 8, 8, 0), (questions['q3'], 5, 4, 1),(questions['q1'], 4, 1, 3)])
+        res = view.get_sort_by_hq([questions['q1'], questions['q2'], questions['q3']], False)
+        self.assertEqual(res, [(questions['q1'], 4, 1, 3), (questions['q3'], 5, 4, 1), (questions['q2'], 8, 8, 0)])
 
 
 class GetRelevantThresholdTests(TestCase):

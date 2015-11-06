@@ -276,21 +276,21 @@ class SurveyFeedbackForm(BaseSurveySection):
                 score = this_score
         return score
 
-    def get_sort_by_hq(self,questions,isBad):
+    def get_sort_by_hq(self, questions, isBad):
         result = []
         for q in questions:
             high_score = self.get_highest_choice_score(q)
-            part_score = self.get_picked_choice_score(self.section,q)
-            if(isinstance(high_score,int) and isinstance(part_score,int)):                
+            part_score = self.get_picked_choice_score(self.section, q)
+            if(isinstance(high_score, int) and isinstance(part_score, int)):                
                 diff = high_score - part_score
-                result.append((q,high_score,part_score,diff))
+                result.append((q, high_score, part_score, diff))
                 
-        if isBad==False:            
+        if isBad == False:            
             # sort by best score
-            return sorted(result, key = lambda result: result[3],reverse=False)
+            return sorted(result, key = lambda result: result[3], reverse=False)[:3]
         else:            
             # sorted by bad score
-            return sorted(result, key = lambda result : result[3],reverse=True)
+            return sorted(result, key = lambda result : result[3], reverse=True)[:3]
         
     def get_thresholds(self):
         """ Returns all contained thresholds sorted on percentage. """
