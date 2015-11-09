@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+from arche.interfaces import ISchemaCreatedEvent
 from arche_m2m.interfaces import ISurvey
 from arche_m2m.interfaces import ISurveySection
 from arche_m2m.models.i18n import deferred_translations_node
 from arche_m2m.models.question import deferred_question_type_widget
+from arche_m2m.models.question_type import EditChoiceSchema
 from pyramid.traversal import find_interface
 from pyramid.traversal import resource_path
 import colander
@@ -115,7 +117,7 @@ def get_choice_values_schema(question, request):
         the referenced question type too.
     """
     schema = colander.Schema()
-    choices = get_all_choices(question, request)
+    choices = get_all_choices(question, request, include_omitted = True)
     for choice in choices:
         schema.add(colander.SchemaNode(colander.Int(),
                                        name = choice.cluster,
@@ -126,14 +128,22 @@ def get_choice_values_appstruct(ruleset, question, request):
     """ Fetch any existing scores for choices related to this question or question type.
     """
     appstruct = {}
-    for choice in get_all_choices(question, request):
+    for choice in get_all_choices(question, request, include_omitted = True):
         value = ruleset.get_choice_score(question, choice)
         if value != None:
             appstruct[choice.cluster] = value
     return appstruct
+
+def add_nocount_option_to_choices(schema, event):
+    schema.add(colander.SchemaNode(colander.Bool(),
+                                   name = 'omit_from_score_count',
+                                   title = _("Omit from score count"),
+                                   default = False,
+                                   missing = False))
 
 def includeme(config):
     config.add_content_schema('RuleSet', RuleSetSchema, ('add','edit', 'view'))
     config.add_content_schema('RuleSet', BulkSelectQuestionsSchema, 'bulk_select')
     config.add_content_schema('SurveyFeedback', SurveyFeedbackSchema, ('add', 'edit', 'view'))
     config.add_content_schema('FeedbackThreshold', FeedbackThresholdSchema, ('add', 'edit', 'view'))
+    config.add_subscriber(add_nocount_option_to_choices, [EditChoiceSchema, ISchemaCreatedEvent])
