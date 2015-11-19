@@ -1,67 +1,67 @@
 /* m2m_feedback css */
 
-.progress2 
+.progress2
 {
-	background: rgba(245, 245, 245, 1);
-	border: 0px solid rgba(245, 245, 245, 1);
-	border-radius: 4px; 
-	height: 3.5em;	
+    background: rgba(245, 245, 245, 1);
+    border: 0px solid rgba(245, 245, 245, 1);
+    border-radius: 4px;
+    height: 3.5em;
 }
 
 .progress-bar
 {
-	font-size: 170%;
-	line-height : 180%;
+    font-size: 170%;
+    line-height : 180%;
 
 }
 
 .list
 {
-	border-style: outset;
-	border-width: 0.8em;
-	border-color: #31708F;	
+    border-style: outset;
+    border-width: 0.8em;
+    border-color: #31708F;
 }
 
 h2
 {
-	font-style : italic;
-	font-variant : small-caps;
-	font-size : 2.0em;
+    font-style : italic;
+    font-variant : small-caps;
+    font-size : 2.0em;
 }
 
 p,li
 {
-	font-size : 1.3em;
-	vertical-align : text-top;
-}	
+    font-size : 1.3em;
+    vertical-align : text-top;
+}
 
 #pict
 {
-	
-	float:right;
+    text-align:center;
+    float:right;
 }
 
 .number
 {
-	font-size : 5em;
+    font-size : 5em;
 }
 
 #best
 {
-	background:#00ff00;
-	border-radius:50%;
-	width:30px;
-	height:30px;
-	border:5px solid #3a773a;
-	float : left;
+    background:#00ff00;
+    border-radius:50%;
+    width:30px;
+    height:30px;
+    border:5px solid #3a773a;
+    float : left;
 }
 
 #worst
 {
-	background:#f70909;
-	border-radius:50%;
-	width:30px;
-	height:30px;
-	border:5px solid #ea6969;
-	float : left;
+    background:#f70909;
+    border-radius:50%;
+    width:30px;
+    height:30px;
+    border:5px solid #ea6969;
+    float : left;
 }
