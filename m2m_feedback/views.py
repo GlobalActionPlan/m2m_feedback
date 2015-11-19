@@ -187,7 +187,7 @@ class SurveyFeedbackForm(BaseSurveySection):
     @property
     def main_tpl(self):
         """ Use different template depending on who the user is.
-            Regular participants get the stripped template without any other controls.
+        Regular participants get the stripped template without any other controls.
         """
         if self.show_manager_controls:
             return 'arche:templates/master.pt'
@@ -269,6 +269,32 @@ class SurveyFeedbackForm(BaseSurveySection):
         if choice and self.ruleset:
             return self.ruleset.get_choice_score(question, choice)
 
+    def get_highest_choice_score(self, question):
+        score = 0
+        for choice in get_all_choices(question, self.request):
+            this_score = self.ruleset.get_choice_score(question, choice)
+            if this_score and this_score > score:
+                score = this_score
+        return score
+
+    def get_sort_by_hq(self, questions, reverse):
+        """ parameters:
+                - questions : iterable of some kind
+                - reverse : boolean
+            return a list of tuples sorted by the difference between the highest_score and the participant_score
+        """
+        #FIXME: Make it possible to set the number of shown scores
+        #FIXME: Right now the same question could show up in both columns
+        #FIXME: Handle situations where there are only bad or only good
+        result = []
+        for q in questions:
+            high_score = self.get_highest_choice_score(q)
+            part_score = self.get_picked_choice_score(self.section, q)
+            if isinstance(high_score, int) and isinstance(part_score, int):
+                diff = high_score - part_score
+                result.append((q, high_score, part_score, diff))
+        return sorted(result, key = lambda result: result[3], reverse=reverse)[:3]
+
     def get_thresholds(self):
         """ Returns all contained thresholds sorted on percentage. """
         return sorted([x for x in self.context.values() if IFeedbackThreshold.providedBy(x)], key = lambda x: x.percentage)
@@ -290,7 +316,6 @@ class SurveyFeedbackForm(BaseSurveySection):
         return HTTPFound(location = self.link(previous))
 
     previous_failure = go_previous
-
 
 def includeme(config):
     config.scan()

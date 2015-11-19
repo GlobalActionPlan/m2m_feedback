@@ -1,1 +1,10 @@
 /* m2m_feedback css */
+
+.progress2
+{
+    height: 3.5em;
+}
+.progress2 > .progress-bar {
+    font-size: 170%;
+    line-height : 180%;
+}
