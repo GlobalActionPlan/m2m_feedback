@@ -10,6 +10,7 @@ with open(os.path.join(here, 'CHANGES.txt')) as f:
 
 requires = (
     'arche_m2m',
+    'arche_ttw_translation',
     )
 
 setup(name='m2m_feedback',
