@@ -146,7 +146,9 @@ class SurveyFeedbackFormTests(TestCase):
         self.config.include('arche.testing')
         self.config.include('arche.testing.catalog')
         self.config.include('arche.models.workflow')
+        self.config.include('betahaus.viewcomponent')
         self.config.include('arche_m2m')
+        self.config.include('m2m_feedback')
         root = barebone_fixture(self.config)
         _fixture_with_questions(root)
         _fixture_feedback_section(root)
@@ -191,9 +193,9 @@ class SurveyFeedbackFormTests(TestCase):
         questions['q3'].title = "q3"
         section = view.request.root['survey']['ss']
         section.responses['participant_uid'] = {'q_cluster': 'a', 'q_cluster2': 'e', 'q_cluster3': 'f'}
-        res = view.get_sort_by_hq([questions['q1'], questions['q2'], questions['q3']],True)
-        self.assertEqual(res, [(questions['q2'], 8, 8, 0), (questions['q3'], 5, 4, 1),(questions['q1'], 4, 1, 3)])
         res = view.get_sort_by_hq([questions['q1'], questions['q2'], questions['q3']], False)
+        self.assertEqual(res, [(questions['q2'], 8, 8, 0), (questions['q3'], 5, 4, 1), (questions['q1'], 4, 1, 3)])
+        res = view.get_sort_by_hq([questions['q1'], questions['q2'], questions['q3']], True)
         self.assertEqual(res, [(questions['q1'], 4, 1, 3), (questions['q3'], 5, 4, 1), (questions['q2'], 8, 8, 0)])
 
 

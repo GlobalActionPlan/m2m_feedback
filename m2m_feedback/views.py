@@ -248,7 +248,7 @@ class SurveyFeedbackForm(BaseSurveySection):
         results = []
         for qid in self.section.question_ids:
             docids = self.catalog_search(cluster = qid, language = self.request.locale_name)
-                #Only one or none
+            #Only one or none
             for question in self.resolve_docids(docids, perm = None):
                 results.append(question)
         return results
@@ -259,9 +259,9 @@ class SurveyFeedbackForm(BaseSurveySection):
         user_response = section.responses.get(self.participant_uid, {})
         choice_cluster = user_response.get(question.cluster, '')
         for choice in self.catalog_search(cluster = choice_cluster,
-                                              language = self.request.locale_name,
-                                              resolve = True,
-                                              perm = None):
+                                          language = self.request.locale_name,
+                                          resolve = True,
+                                          perm = None):
             return choice
 
     def get_picked_choice_score(self, section, question):
@@ -277,13 +277,15 @@ class SurveyFeedbackForm(BaseSurveySection):
                 score = this_score
         return score
 
-    def get_sort_by_hq(self, questions, isAscendingOrder):
-        """
-            parameters:
-                - questions : list
-                - isBad : boolean
+    def get_sort_by_hq(self, questions, reverse):
+        """ parameters:
+                - questions : iterable of some kind
+                - reverse : boolean
             return a list of tuples sorted by the difference between the highest_score and the participant_score
         """
+        #FIXME: Make it possible to set the number of shown scores
+        #FIXME: Right now the same question could show up in both columns
+        #FIXME: Handle situations where there are only bad or only good
         result = []
         for q in questions:
             high_score = self.get_highest_choice_score(q)
@@ -291,13 +293,7 @@ class SurveyFeedbackForm(BaseSurveySection):
             if isinstance(high_score, int) and isinstance(part_score, int):
                 diff = high_score - part_score
                 result.append((q, high_score, part_score, diff))
-
-        if isAscendingOrder == False:
-            # sort by best score / Descending order
-            return sorted(result, key = lambda result: result[3], reverse=False)[:3]
-        else:
-            # sorted by bad score / Ascending order
-            return sorted(result, key = lambda result : result[3], reverse=True)[:3]
+        return sorted(result, key = lambda result: result[3], reverse=reverse)[:3]
 
     def get_thresholds(self):
         """ Returns all contained thresholds sorted on percentage. """
