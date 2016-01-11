@@ -5,8 +5,8 @@ from arche.interfaces import ISchemaCreatedEvent
 from arche_m2m.interfaces import ISurvey
 from arche_m2m.interfaces import ISurveySection
 from arche_m2m.models.i18n import deferred_translations_node
-from arche_m2m.models.question import deferred_question_type_widget
-from arche_m2m.models.question_type import EditChoiceSchema
+from arche_m2m.schemas.question import deferred_question_type_widget
+from arche_m2m.schemas.question_type import EditChoiceSchema
 from pyramid.traversal import find_interface
 from pyramid.traversal import resource_path
 import colander
