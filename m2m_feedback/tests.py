@@ -2,36 +2,14 @@ from __future__ import unicode_literals
 from unittest import TestCase
 
 from arche.testing import barebone_fixture
+from arche.testing import init_request_methods
+from arche_m2m.testing import question_fixture
 from pyramid import testing
 from zope.interface.verify import verifyClass
 from zope.interface.verify import verifyObject
 
 from m2m_feedback.interfaces import IRuleSet
 
-
-def _fixture_with_questions(root):
-    from arche_m2m.models.question import Question
-    from arche_m2m.models.question_type import Choice
-    from arche_m2m.models.question_type import QuestionType
-    from arche_m2m.models.question_types import QuestionTypes
-    from arche_m2m.models.questions import Questions
-    root['questions'] = Questions()
-    root['qtypes'] = QuestionTypes()
-    root['qtypes']['qt1'] = qt1 = QuestionType(uid = 'qt_uid', input_widget = 'checkbox_multichoice_widget')
-    root['qtypes']['qt2'] = qt2 = QuestionType(uid = 'qt_uid2', input_widget = 'checkbox_multichoice_widget')
-    root['qtypes']['qt3'] = qt3 = QuestionType(uid = 'qt_uid3', input_widget = 'checkbox_multichoice_widget')
-    qt1['c1'] = Choice(cluster = 'a', uid = 'c_uid1', language = 'sv')
-    qt1['c2'] = Choice(cluster = 'a', uid = 'c_uid2', language = 'en')
-    qt1['c3'] = Choice(cluster = 'b', uid = 'c_uid3', language = 'sv')
-    qt2['c1'] = Choice(cluster = 'c', uid = 'c_uid4', language = 'sv')
-    qt3['c1'] = Choice(cluster = 'f', uid = 'c_uid7', language = 'sv')
-    root['questions']['q1'] = Question(question_type = 'qt_uid', cluster = 'q_cluster', language = 'sv')
-    root['questions']['q2'] = q2 = Question(question_type = 'qt_uid2', cluster = 'q_cluster2', language = 'sv')
-    root['questions']['q3'] = q3 = Question(question_type = 'qt_uid3', cluster = 'q_cluster3', language = 'sv')
-    q2['c2'] = Choice(cluster = 'd', uid = 'c_uid5', language = 'en')
-    q2['c3'] = Choice(cluster = 'e', uid = 'c_uid6', language = 'sv')
-    q3['c2'] = Choice(cluster = 'f', uid = 'c_uid8', language = 'en')
-    q3['c3'] = Choice(cluster = 'g', uid = 'c_uid9', language = 'sv')
 
 def _fixture_feedback_section(root):
     from m2m_feedback.models import RuleSet
@@ -76,7 +54,7 @@ class RuleSetTests(TestCase):
 
     def _fixture(self):
         root = barebone_fixture(self.config)
-        _fixture_with_questions(root)
+        question_fixture(root)
         return root
 
     def test_verify_class(self):
@@ -112,7 +90,7 @@ class UpdateChoiceSiblingsIntegrationTests(TestCase):
 
     def _fixture(self):
         root = barebone_fixture(self.config)
-        _fixture_with_questions(root)
+        question_fixture(root)
         return root
 
     def test_omit_from_score_count_updated(self):
@@ -150,13 +128,14 @@ class SurveyFeedbackFormTests(TestCase):
         self.config.include('arche_m2m')
         self.config.include('m2m_feedback')
         root = barebone_fixture(self.config)
-        _fixture_with_questions(root)
+        question_fixture(root)
         _fixture_feedback_section(root)
         return root
 
     def _mk_view(self, locale_name = 'sv', **kw):
         root = self._fixture()
         request = testing.DummyRequest(locale_name = locale_name, **kw)
+        init_request_methods(request)
         request.root = root
         return self._cut(root['survey']['feedback'], request)
 

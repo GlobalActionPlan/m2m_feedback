@@ -28,6 +28,7 @@ from m2m_feedback.models import get_all_choices
 from m2m_feedback.models import get_relevant_threshold
 from m2m_feedback.schemas import get_choice_values_appstruct
 from m2m_feedback.schemas import get_choice_values_schema
+from m2m_feedback.interfaces import IScoreHandler
 
 
 @view_defaults(context = IRuleSet, permission = PERM_VIEW)
@@ -206,29 +207,16 @@ class SurveyFeedbackForm(BaseSurveySection):
         return self.resolve_uid(self.context.section, perm = None)
 
     @reify
+    def score(self):
+        return self.request.registry.getMultiAdapter([self.ruleset, self.request], IScoreHandler)
+
+    @reify
     def max_score(self):
-        #FIXME: Calculate this another way. First look at the users possible choices, then remove
-        #any questions where the user picked something where omit_from_score_count == True
-        results = []
-        for question in self.get_questions():
-            score = 0
-            for choice in get_all_choices(question, self.request):
-                this_score = self.ruleset.get_choice_score(question, choice)
-                if this_score and this_score > score:
-                    score = this_score
-            results.append(score)
-        return sum(results)
+        return self.score.max_score(self.section, self.participant_uid)
 
     @reify
     def participant_score(self):
-        part_responses = self.section.responses.get(self.participant_uid, {})
-        scores = []
-        for question in self.get_questions():
-            if question.cluster in part_responses:
-                choice = self.get_picked_choice(self.section, question)
-                if choice and choice.omit_from_score_count == False:
-                    scores.append(self.ruleset.get_choice_score(question, choice, default = 0))
-        return sum(scores)
+        return self.score.participant_score(self.section, self.participant_uid)
 
     def get_percentage(self, score):
         try:
@@ -253,29 +241,13 @@ class SurveyFeedbackForm(BaseSurveySection):
                 results.append(question)
         return results
 
-    def get_picked_choice(self, section, question):
-        #FIXME: This is not the right way to seach.
-        #The response might not be a reference
-        user_response = section.responses.get(self.participant_uid, {})
-        choice_cluster = user_response.get(question.cluster, '')
-        for choice in self.catalog_search(cluster = choice_cluster,
-                                          language = self.request.locale_name,
-                                          resolve = True,
-                                          perm = None):
-            return choice
-
     def get_picked_choice_score(self, section, question):
-        choice = self.get_picked_choice(section, question)
+        choice = self.request.get_picked_choice(section, question, self.participant_uid)
         if choice and self.ruleset:
             return self.ruleset.get_choice_score(question, choice)
 
     def get_highest_choice_score(self, question):
-        score = 0
-        for choice in get_all_choices(question, self.request):
-            this_score = self.ruleset.get_choice_score(question, choice)
-            if this_score and this_score > score:
-                score = this_score
-        return score
+        return self.score.get_highest_choice_score(question)
 
     def get_sort_by_hq(self, questions, reverse):
         """ parameters:
@@ -286,6 +258,7 @@ class SurveyFeedbackForm(BaseSurveySection):
         #FIXME: Make it possible to set the number of shown scores
         #FIXME: Right now the same question could show up in both columns
         #FIXME: Handle situations where there are only bad or only good
+        #FIXME: Check that it works properly with omitted question choices.
         result = []
         for q in questions:
             high_score = self.get_highest_choice_score(q)
