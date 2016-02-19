@@ -7,8 +7,10 @@ from arche_m2m.testing import question_fixture
 from pyramid import testing
 from zope.interface.verify import verifyClass
 from zope.interface.verify import verifyObject
+from pyramid.request import apply_request_extensions
 
 from m2m_feedback.interfaces import IRuleSet
+from m2m_feedback.interfaces import IScoreHandler
 
 
 def _fixture_feedback_section(root):
@@ -20,16 +22,19 @@ def _fixture_feedback_section(root):
     qt1 = root['qtypes']['qt1']
     q1 = root['questions']['q1']
     #Just one of each!
+    #q1 max score 4
     rs.set_choice_score(q1, qt1['c1'], 1) #a
     rs.set_choice_score(q1, qt1['c2'], 1) #a
     rs.set_choice_score(q1, qt1['c3'], 4) #b
     qt2 = root['qtypes']['qt2']
     q2 = root['questions']['q2']
+    #q2 max score 8
     rs.set_choice_score(q2, qt2['c1'], 2) #c
     rs.set_choice_score(q2, q2['c2'], 4) #d
     rs.set_choice_score(q2, q2['c3'], 8) #e
     qt3 = root['qtypes']['qt3']
     q3 = root['questions']['q3']
+    #q3 max score 5
     rs.set_choice_score(q3, qt3['c1'], 4) #f
     rs.set_choice_score(q3, q3['c2'], 4) #f
     rs.set_choice_score(q3, q3['c3'], 5) #g
@@ -38,6 +43,14 @@ def _fixture_feedback_section(root):
     ss.question_ids = ['q_cluster', 'q_cluster2', 'q_cluster3']
     survey['feedback'] = SurveyFeedback(ruleset = rs.uid, section = ss.uid)
 
+def _fixture_section_responses(root):
+    #NOTE: only q_cluster3 has a question in english and corresponding choice translations!
+    #See arche_m2m.testing.question_fixture
+    section = root['survey']['ss']
+    section.responses['part_1'] = {'q_cluster': 'b', 'q_cluster2': 'd', 'q_cluster3': 'f'}
+    section.responses['part_2'] = {'q_cluster': 'a', 'q_cluster2': 'e', 'q_cluster3': 'g'}
+    section.responses['part_3'] = {'q_cluster': '', 'q_cluster2': '', 'q_cluster3': ''}
+    return section
 
 class RuleSetTests(TestCase):
 
@@ -78,6 +91,93 @@ class RuleSetTests(TestCase):
         obj = self._cut()
         obj.set_choice_score(question, choice, 1)
         self.assertEqual(obj.get_choice_score(question.cluster, choice.cluster), 1)
+
+
+class ScoreHandlerTests(TestCase):
+
+    def setUp(self):
+        self.config = testing.setUp()
+
+    def tearDown(self):
+        testing.tearDown()
+
+    @property
+    def _cut(self):
+        from m2m_feedback.models import ScoreHandler
+        return ScoreHandler
+
+    def _fixture(self):
+        self.config.include('arche.testing')
+        self.config.include('arche.testing.catalog')
+        self.config.include('arche.testing.workflow')
+        self.config.include('betahaus.viewcomponent')
+        self.config.include('arche_m2m')
+        self.config.include('m2m_feedback')
+        root = barebone_fixture(self.config)
+        question_fixture(root)
+        _fixture_feedback_section(root)
+        return root
+
+    def test_verify_class(self):
+        self.failUnless(verifyClass(IScoreHandler, self._cut))
+
+    def test_verify_object(self):
+        obj = self._cut(None, None)
+        self.failUnless(verifyObject(IScoreHandler, obj))
+
+    def test_get_current_average_en(self):
+        root = self._fixture()
+        section = _fixture_section_responses(root)
+        request = testing.DummyRequest()
+        apply_request_extensions(request)
+        request.root = root
+        obj = self._cut(root['ruleset'], request)
+        result = tuple(obj.get_current_average(section))
+        #part_1
+        self.assertEqual(result[0][:2], [5, 4])
+        #part_2
+        self.assertEqual(result[1][:2], [5, 5])
+        #part_3
+        self.assertEqual(result[2][:2], [5, 0])
+
+    def test_get_current_average_sv(self):
+        root = self._fixture()
+        section = _fixture_section_responses(root)
+        self.config.registry.settings['default_locale_name'] = 'sv'
+        request = testing.DummyRequest()
+        self.assertEqual(request.locale_name, 'sv')
+        apply_request_extensions(request)
+        request.root = root
+        obj = self._cut(root['ruleset'], request)
+        result = tuple(obj.get_current_average(section))
+        #part_1
+        self.assertEqual(result[0][:2], [17, 12])
+        #part_2
+        self.assertEqual(result[1][:2], [17, 14])
+        #part_3
+        self.assertEqual(result[2][:2], [17, 0])
+
+    def test_get_current_average_sv_some_picked_choices_omitted(self):
+        root = self._fixture()
+        section = _fixture_section_responses(root)
+        #a, b en/sv
+        root['qtypes']['qt1']['c1'].omit_from_score_count = True
+        root['qtypes']['qt1']['c2'].omit_from_score_count = True
+        root['qtypes']['qt1']['c3'].omit_from_score_count = True
+        #c
+        root['qtypes']['qt2']['c1'].omit_from_score_count = True
+        self.config.registry.settings['default_locale_name'] = 'sv'
+        request = testing.DummyRequest()
+        apply_request_extensions(request)
+        request.root = root
+        obj = self._cut(root['ruleset'], request)
+        result = tuple(obj.get_current_average(section))
+        #part_1
+        self.assertEqual(result[0][:2], [13, 8])
+        #part_2
+        self.assertEqual(result[1][:2], [13, 13])
+        #part_3
+        self.assertEqual(result[2][:2], [13, 0])
 
 
 class UpdateChoiceSiblingsIntegrationTests(TestCase):

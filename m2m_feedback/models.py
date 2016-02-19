@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
-
+from decimal import Decimal
 
 from BTrees.OIBTree import OIBTree
 from BTrees.OOBTree import OOBTree
@@ -73,7 +73,7 @@ class FeedbackThreshold(Base):
     description = ""
     colour = ""
 
-    def __repr__(self):
+    def __repr__(self): #pragma: no coverage
         klass = self.__class__
         classname = '%s.%s' % (klass.__module__, klass.__name__)
         return '<%s object %r at %#x>' % (classname,
@@ -138,6 +138,19 @@ class ScoreHandler(object):
                 score = this_score
         return score
 
+    def get_current_average(self, section):
+        #Iterate over participant uids
+        for participant_uid in section.responses:
+         #   for question in questions.values():
+            score = [self.max_score(section, participant_uid),
+                     self.participant_score(section, participant_uid)]
+            score.append(self.calc_perc(score[1], score[0]))
+            yield score
+
+    def calc_perc(self, val, max):
+        if not max:
+            return 0
+        return Decimal(val)/Decimal(max) * 100
 
 def get_all_choices(question, request, only_from_type = False, locale_name = None, include_omitted = False):
     """
