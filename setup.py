@@ -9,6 +9,7 @@ with open(os.path.join(here, 'CHANGES.txt')) as f:
     CHANGES = f.read()
 
 requires = (
+    'pyramid>=1.6',
     'arche_m2m',
     'arche_ttw_translation',
     )
